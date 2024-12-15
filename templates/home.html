@@ -10,17 +10,21 @@ Home
     <div class="text-center row">
         <div class="col">
             <p>{{ text1 }}</p>
-            <div class="row">
-                <button>Human</button>
-                <button>Bot</button>
-            </div>
+            <form action="/index" method="POST">
+                <div class="row">
+                    <button type="submit">Human</button>
+                    <button type="submit">Bot</button>
+                </div>
+            </form>
         </div>
         <div class="col">
             <p>{{ text2 }}</p>
-            <div class="row">
-                <button>Human</button>
-                <button>Bot</button>
-            </div>
+            <form action="/index" method="POST">
+                <div class="row">
+                    <button type="submit">Human</button>
+                    <button type="submit">Bot</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

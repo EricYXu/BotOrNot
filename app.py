@@ -23,38 +23,42 @@ def get_db_connection():
 @app.route('/')
 def index():
     format = random.randint(1,3)
+    conn = get_db_connection()
+    humanIndices = conn.execute('SELECT COUNT(*) AS text_count FROM humanText').fetchone()['text_count']
+    botIndices = conn.execute('SELECT COUNT(*) AS text_count FROM botText').fetchone()['text_count']
+    conn.close()
+
     if format == 1:
         """ Human Human """
-        humanIndices = 0 # TODO: Replace with SQL commands using COUNT 
-        botIndices = 0 # TODO: Replace with SQL commands
+        index1 = random.randint(1,humanIndices) 
+        index2 = random.randint(1,humanIndices)
+        while index2 == index1:
+            index2 = random.randint(1,humanIndices)
 
-        text1 = random.randint(1,humanIndices) # TODO: Replace with SQL commands to pull random text chunk
-        text2 = random.randint(1,humanIndices) # TODO: Replace with SQL commands to pull random text chunk
-
-        # TODO: Check if the text is equal
+        # Grabs text
+        text1 = conn.execute('SELECT * FROM humanText WHERE id = ?',index1).fetchone()
+        text2 = conn.execute('SELECT * FROM humanText WHERE id = ?',index2).fetchone()
 
     elif format == 2:
         """ Human Bot """
-        humanIndices = 0 # TODO: Replace with SQL commands
-        botIndices = 0 # TODO: Replace with SQL commands
+        index1 = random.randint(1,humanIndices) 
+        index2 = random.randint(1,botIndices)
 
-        text1 = random.randint(1,humanIndices) # TODO: Replace with SQL commands to pull random text chunk
-        text2 = random.randint(1,botIndices) # TODO: Replace with SQL commands to pull random text chunk
-
-        # TODO: Check if the text is equal and then try again if so
+        # Grabs text
+        text1 = conn.execute('SELECT * FROM humanText WHERE id = ?',index1).fetchone()
+        text2 = conn.execute('SELECT * FROM botText WHERE id = ?',index2).fetchone()
 
 
     else:
         """ Bot Bot """
-        humanIndices = 0 # TODO: Replace with SQL commands
-        botIndices = 0 # TODO: Replace with SQL commands
+        index1 = random.randint(1,humanIndices) 
+        index2 = random.randint(1,botIndices)
+        while index2 == index1:
+            index2 = random.randint(1,botIndices)
 
-        text1 = random.randint(1,botIndices) # TODO: Replace with SQL commands to pull random text chunk
-        text2 = random.randint(1,botIndices) # TODO: Replace with SQL commands to pull random text chunk
-
-        # TODO: Check if the text is equal
-
-        # TODO: Implement the
+        # Grabs text
+        text1 = conn.execute('SELECT * FROM botText WHERE id = ?',index1).fetchone()
+        text2 = conn.execute('SELECT * FROM botText WHERE id = ?',index2).fetchone()
 
     # TODO: Later, try to generate some elo system for players and text blocks --> make some leaderboard
     return render_template('home.html',text1=text1, text2=text2)
@@ -65,10 +69,6 @@ def login():
     session.clear()
 
     if request.method == "POST":
-        if not request.form.get("username"):
-            return apology("must provide username", 403)
-        elif not request.form.get("password"):
-            return apology("must provide password", 403)
         # Query database for username
         conn = get_db_connection()
         rows = conn.execute("SELECT * FROM users WHERE username = ?", (request.form.get("username"),)).fetchall()
@@ -133,6 +133,9 @@ def landing():
     conn.close()
 
     return render_template("landing.html", data=user)
+
+# TODO: Using POST route to allow users to submit their own prompts, responses, based on elo --> request/test
+@app.route("/")
 
 
 @app.route("/logout")
