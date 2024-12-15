@@ -14,7 +14,7 @@
     <title> Bot or Not? | {% block title %}{% endblock %}</title>
 </head>
 
-<body class="fill">
+<body class="fill container-fluid">
     <div class="container-fluid navigation-bar">
         {% if session["user_id"] %}
         <nav class="nav">
@@ -41,6 +41,10 @@
     <main class="container-fluid text-center">
         {% block main %}{% endblock %}
     </main>
+
+    <footer class=" text-center game-text game-padding">
+        Under Development
+    </footer>
 
 </body>
 

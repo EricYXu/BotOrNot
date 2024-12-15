@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}
+Game
+{% endblock %}
+
+{% block main %}
+
+<div class="container-fluid">
+    <div class="text-center row">
+        <h1 class="game-padding">Prompt: {{ prompt['text'] }}</h1>
+    </div>
+    <div class="text-center row game-padding">
+        <div class="col">
+            <h3>{{ text1['text'] }}</h3>
+            <form action="/game" method="POST">
+                <div class="row game-padding">
+                    <div class="col">
+                        <button class="btn btn-primary btn-lg" name="human" value="human" type="submit">Human</button>
+                    </div>
+                    <div class="col">
+                        <button class="btn btn-primary btn-lg" name="bot" value="bot" type="button">Bot</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="col">
+            <h3>{{ text2['text'] }}</h3>
+            <form action="/game" method="POST">
+                <div class="row game-padding">
+                    <div class="col">
+                        <button class="btn btn-primary btn-lg" name="human" value="human" type="submit">Human</button>
+                    </div>
+                    <div class="col">
+                        <button class="btn btn-primary btn-lg" name="bot" value="bot" type="button">Bot</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

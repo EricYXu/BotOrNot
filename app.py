@@ -1,10 +1,12 @@
 import os
-import random
 from flask import Flask, request, redirect, render_template, session, flash
-from flask_sqlalchemy import SQLAlchemy
+from flask_session import Session
 import sqlite3
 from werkzeug.security import check_password_hash, generate_password_hash
-from helpers import apology
+from flask_socketio import SocketIO, emit
+from threading import Thread
+import random
+import threading
 import requests
 
 # Configuring Flask
@@ -22,22 +24,37 @@ def get_db_connection():
 """ Home """
 @app.route('/')
 def index():
+    return render_template('home.html')
+
+""" Tutorial """
+@app.route('/tutorial')
+def tutorial():
+    return render_template('tutorial.html')
+
+""" Game """
+@app.route('/game')
+def game():
     format = random.randint(1,3)
     conn = get_db_connection()
     humanIndices = conn.execute('SELECT COUNT(*) AS text_count FROM humanText').fetchone()['text_count']
     botIndices = conn.execute('SELECT COUNT(*) AS text_count FROM botText').fetchone()['text_count']
-    conn.close()
+    promptIndices = conn.execute('SELECT COUNT(*) AS prompt_count FROM prompts').fetchone()['prompt_count']
+
+    promptIndex = random.randint(1,promptIndices)
+    prompt = conn.execute('SELECT * FROM prompts WHERE id = ?',(promptIndex,)).fetchone()
 
     if format == 1:
         """ Human Human """
         index1 = random.randint(1,humanIndices) 
         index2 = random.randint(1,humanIndices)
-        while index2 == index1:
-            index2 = random.randint(1,humanIndices)
+
+        # TODO: Reimplement this once you get more data
+        # while index2 == index1:
+        #     index2 = random.randint(1,humanIndices)
 
         # Grabs text
-        text1 = conn.execute('SELECT * FROM humanText WHERE id = ?',index1).fetchone()
-        text2 = conn.execute('SELECT * FROM humanText WHERE id = ?',index2).fetchone()
+        text1 = conn.execute('SELECT * FROM humanText WHERE id = ?',(index1,)).fetchone()
+        text2 = conn.execute('SELECT * FROM humanText WHERE id = ?',(index2,)).fetchone()
 
     elif format == 2:
         """ Human Bot """
@@ -45,27 +62,31 @@ def index():
         index2 = random.randint(1,botIndices)
 
         # Grabs text
-        text1 = conn.execute('SELECT * FROM humanText WHERE id = ?',index1).fetchone()
-        text2 = conn.execute('SELECT * FROM botText WHERE id = ?',index2).fetchone()
-
+        text1 = conn.execute('SELECT * FROM humanText WHERE id = ?',(index1,)).fetchone()
+        text2 = conn.execute('SELECT * FROM botText WHERE id = ?',(index2,)).fetchone()
 
     else:
         """ Bot Bot """
         index1 = random.randint(1,humanIndices) 
         index2 = random.randint(1,botIndices)
-        while index2 == index1:
-            index2 = random.randint(1,botIndices)
+
+        # TODO: Reimplement this once you get more data
+        # while index2 == index1:
+        #     index2 = random.randint(1,botIndices)
 
         # Grabs text
-        text1 = conn.execute('SELECT * FROM botText WHERE id = ?',index1).fetchone()
-        text2 = conn.execute('SELECT * FROM botText WHERE id = ?',index2).fetchone()
+        text1 = conn.execute('SELECT * FROM botText WHERE id = ?',(index1,)).fetchone()
+        text2 = conn.execute('SELECT * FROM botText WHERE id = ?',(index2,)).fetchone()
+
+    # Closes database
+    conn.close()
 
     # TODO: Later, try to generate some elo system for players and text blocks --> make some leaderboard
-    return render_template('home.html',text1=text1, text2=text2)
+    return render_template('game.html',text1=text1, text2=text2, prompt=prompt)
 
+""" Logs in user """
 @app.route('/login', methods=["GET", "POST"])
 def login():
-    """ Logs in user """
     session.clear()
 
     if request.method == "POST":
@@ -74,7 +95,7 @@ def login():
         rows = conn.execute("SELECT * FROM users WHERE username = ?", (request.form.get("username"),)).fetchall()
         conn.close()
         if len(rows) != 1 or not check_password_hash(rows[0]["password"], request.form.get("password")):
-            return apology("invalid username and/or password", 403)
+            print("Yay!")
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
 
@@ -135,7 +156,6 @@ def landing():
     return render_template("landing.html", data=user)
 
 # TODO: Using POST route to allow users to submit their own prompts, responses, based on elo --> request/test
-@app.route("/")
 
 
 @app.route("/logout")
@@ -146,4 +166,4 @@ def logout():
     return redirect("/")
 
 if __name__ == '__main__':
-    app.run(app, debug=True)
+    app.run(debug=True)
