@@ -1,6 +1,5 @@
 import sqlite3
 
-# Can also use this script to execute stuff on the harvard.db database
 db_name = "site.db"
 connection = sqlite3.connect(db_name)
 
@@ -12,7 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     username TEXT NOT NULL,
     password TEXT NOT NULL,
-    elo INTEGER NOT NULL DEFAULT 0
+    elo INTEGER NOT NULL DEFAULT 1500
 );
 """
 
@@ -22,7 +21,7 @@ CREATE TABLE IF NOT EXISTS prompts (
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     username TEXT NOT NULL,
     text TEXT NOT NULL,
-    elo INTEGER NOT NULL DEFAULT 0
+    elo INTEGER NOT NULL DEFAULT 1500
 );
 """
 
@@ -32,7 +31,7 @@ CREATE TABLE IF NOT EXISTS botText (
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     username TEXT NOT NULL,
     text TEXT NOT NULL,
-    elo INTEGER NOT NULL DEFAULT 0
+    elo INTEGER NOT NULL DEFAULT 1500
 );
 """
 

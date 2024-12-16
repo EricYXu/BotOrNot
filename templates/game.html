@@ -10,33 +10,56 @@ Game
     <div class="text-center row">
         <h1 class="game-padding">Prompt: {{ prompt['text'] }}</h1>
     </div>
-    <div class="text-center row game-padding">
-        <div class="col">
-            <h3>{{ text1['text'] }}</h3>
-            <form action="/game" method="POST">
-                <div class="row game-padding">
-                    <div class="col">
-                        <button class="btn btn-primary btn-lg" name="human" value="human" type="submit">Human</button>
-                    </div>
-                    <div class="col">
-                        <button class="btn btn-primary btn-lg" name="bot" value="bot" type="button">Bot</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-        <div class="col">
-            <h3>{{ text2['text'] }}</h3>
-            <form action="/game" method="POST">
-                <div class="row game-padding">
-                    <div class="col">
-                        <button class="btn btn-primary btn-lg" name="human" value="human" type="submit">Human</button>
-                    </div>
-                    <div class="col">
-                        <button class="btn btn-primary btn-lg" name="bot" value="bot" type="button">Bot</button>
-                    </div>
-                </div>
-            </form>
-        </div>
+    <div class="row center">
+        <h3>Prompt ELO: {{ prompt['elo'] }}</h3>
+        <h3>Your ELO: {{ user['elo'] }}</h3>
     </div>
+    <form action="/game" method="POST">
+        <div class="text-center row game-padding">
+            <div class="col">
+                <div class="text-card">
+                    <h3 class="game-padding">{{ text1['text'] }}</h3>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="response1" value="human1" id="response1">
+                        <label class="form-check-label game-text" for="response1">
+                        Human
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="response1" value="bot1" id="response1">
+                        <label class="form-check-label game-text" for="response1">
+                        Bot
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="text-card">
+                    <h3 class="game-padding">{{ text2['text'] }}</h3>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="response2" value="human2" id="response2">
+                        <label class="form-check-label game-text" for="response2">
+                        Human
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="response2" value="bot2" id="response2">
+                        <label class="form-check-label game-text" for="response2">
+                        Bot
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col game-padding center">
+            <div class="row form-group game-padding center">
+                <label for="formGroupExampleInput" class="game-text large-tight">Why did you guess the way you did?</label>
+                <input type="text" class="form-control large-tight" id="justification" placeholder="Justification">
+            </div>
+            <div class="row game-padding center">
+                <button class="btn btn-primary btn-lg large-tight" type="submit">Submit</button>
+            </div>
+        </div>
+    </form>
 </div>
 {% endblock %}

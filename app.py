@@ -4,10 +4,7 @@ from flask_session import Session
 import sqlite3
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_socketio import SocketIO, emit
-from threading import Thread
 import random
-import threading
-import requests
 
 # Configuring Flask
 app = Flask(__name__)
@@ -32,59 +29,69 @@ def tutorial():
     return render_template('tutorial.html')
 
 """ Game """
-@app.route('/game')
+@app.route('/game', methods=["GET", "POST"])
 def game():
-    format = random.randint(1,3)
-    conn = get_db_connection()
-    humanIndices = conn.execute('SELECT COUNT(*) AS text_count FROM humanText').fetchone()['text_count']
-    botIndices = conn.execute('SELECT COUNT(*) AS text_count FROM botText').fetchone()['text_count']
-    promptIndices = conn.execute('SELECT COUNT(*) AS prompt_count FROM prompts').fetchone()['prompt_count']
+    if "user_id" not in session:
+        flash('Please create an account first.')
+        return redirect("/")
 
+    # Gets user information
+    user_id = session["user_id"]
+    conn = get_db_connection()
+    user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+
+    # Formats the game
+    format = random.randint(1,2)
+    promptIndices = conn.execute('SELECT COUNT(*) AS prompt_count FROM prompts').fetchone()['prompt_count']
     promptIndex = random.randint(1,promptIndices)
     prompt = conn.execute('SELECT * FROM prompts WHERE id = ?',(promptIndex,)).fetchone()
 
     if format == 1:
-        """ Human Human """
-        index1 = random.randint(1,humanIndices) 
-        index2 = random.randint(1,humanIndices)
-
-        # TODO: Reimplement this once you get more data
-        # while index2 == index1:
-        #     index2 = random.randint(1,humanIndices)
-
-        # Grabs text
-        text1 = conn.execute('SELECT * FROM humanText WHERE id = ?',(index1,)).fetchone()
-        text2 = conn.execute('SELECT * FROM humanText WHERE id = ?',(index2,)).fetchone()
-
-    elif format == 2:
-        """ Human Bot """
-        index1 = random.randint(1,humanIndices) 
-        index2 = random.randint(1,botIndices)
-
-        # Grabs text
-        text1 = conn.execute('SELECT * FROM humanText WHERE id = ?',(index1,)).fetchone()
-        text2 = conn.execute('SELECT * FROM botText WHERE id = ?',(index2,)).fetchone()
+        """ Bot Human """
+        text1 = conn.execute('SELECT * FROM botText WHERE id = ?',(promptIndex,)).fetchone()
+        text2 = conn.execute('SELECT * FROM humanText WHERE id = ?',(promptIndex,)).fetchone()
 
     else:
-        """ Bot Bot """
-        index1 = random.randint(1,humanIndices) 
-        index2 = random.randint(1,botIndices)
-
-        # TODO: Reimplement this once you get more data
-        # while index2 == index1:
-        #     index2 = random.randint(1,botIndices)
-
-        # Grabs text
-        text1 = conn.execute('SELECT * FROM botText WHERE id = ?',(index1,)).fetchone()
-        text2 = conn.execute('SELECT * FROM botText WHERE id = ?',(index2,)).fetchone()
+        """ Human Bot """
+        text1 = conn.execute('SELECT * FROM humanText WHERE id = ?',(promptIndex,)).fetchone()
+        text2 = conn.execute('SELECT * FROM botText WHERE id = ?',(promptIndex,)).fetchone()
 
     # Closes database
     conn.close()
 
-    # TODO: Later, try to generate some elo system for players and text blocks --> make some leaderboard
-    return render_template('game.html',text1=text1, text2=text2, prompt=prompt)
+    # TODO: Game Logic
+    if request.method == 'POST':
+        response1 = request.form.get('response1')
+        response2 = request.form.get('response2')
+        numberCorrect = 0
 
-""" Logs in user """
+        if format == 1:
+            if response1 == "bot1" and response2 == "human2":
+                numberCorrect = 2
+            elif response1 == "human1" and response2 == "bot2":
+                numberCorrect = 0
+            else:
+                numberCorrect = 1
+        else:
+            if response1 == "human1" and response2 == "bot2":
+                numberCorrect = 2
+            elif response1 == "bot1" and response2 == "human2":
+                numberCorrect = 0
+            else:
+                numberCorrect = 1
+
+        # TODO: Find a way to alter the ELO of prompts and texts
+        
+
+        # TODO: Find a way to alter the user ELO after a successful or unsuccessful guess
+
+
+        
+
+    # TODO: Later, try to generate some elo system for players and text blocks --> make some leaderboard
+    return render_template('game.html',text1=text1, text2=text2, prompt=prompt,user=user)
+
+""" Login """
 @app.route('/login', methods=["GET", "POST"])
 def login():
     session.clear()
@@ -94,20 +101,20 @@ def login():
         conn = get_db_connection()
         rows = conn.execute("SELECT * FROM users WHERE username = ?", (request.form.get("username"),)).fetchall()
         conn.close()
+
         if len(rows) != 1 or not check_password_hash(rows[0]["password"], request.form.get("password")):
             print("Yay!")
+
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
-
         flash('Successfully logged in!')
-        return redirect("/landing")
+        return redirect("/game")
     else:
         return render_template("login.html")
 
+""" Register """
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    """Registers user"""
-
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
@@ -135,7 +142,7 @@ def register():
     else:
         return render_template("register.html")
 
-
+""" Landing """
 @app.route("/landing", methods=["GET", "POST"])
 def landing():
     """Sends logged-in user to landing dashboard"""
@@ -157,12 +164,12 @@ def landing():
 
 # TODO: Using POST route to allow users to submit their own prompts, responses, based on elo --> request/test
 
-
+""" Logout """
 @app.route("/logout")
 def logout():
     """ Logs user out """
     session.clear()
-    
+    flash('Successfully logged out.')
     return redirect("/")
 
 if __name__ == '__main__':
