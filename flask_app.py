@@ -1,6 +1,5 @@
 import os
 from flask import Flask, request, redirect, render_template, session, flash
-from flask_session import Session
 import sqlite3
 from werkzeug.security import check_password_hash, generate_password_hash
 import random
