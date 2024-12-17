@@ -3,20 +3,14 @@ from flask import Flask, request, redirect, render_template, session, flash
 from flask_session import Session
 import sqlite3
 from werkzeug.security import check_password_hash, generate_password_hash
-from flask_socketio import SocketIO, emit
 import random
+from helpers import get_db_connection, change_elo
 
 # Configuring Flask
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(16)
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
-
-# Connects to database
-def get_db_connection():
-    conn = sqlite3.connect('site.db')
-    conn.row_factory = sqlite3.Row
-    return conn
 
 """ Home """
 @app.route('/')
@@ -27,6 +21,18 @@ def index():
 @app.route('/tutorial')
 def tutorial():
     return render_template('tutorial.html')
+
+""" Landing """
+@app.route("/landing", methods=["GET", "POST"])
+def landing():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    user_id = session["user_id"]
+    conn = get_db_connection()
+    user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    conn.close()
+    return render_template("landing.html", user=user)
 
 """ Game """
 @app.route('/game', methods=["GET", "POST"])
@@ -45,26 +51,20 @@ def game():
     promptIndices = conn.execute('SELECT COUNT(*) AS prompt_count FROM prompts').fetchone()['prompt_count']
     promptIndex = random.randint(1,promptIndices)
     prompt = conn.execute('SELECT * FROM prompts WHERE id = ?',(promptIndex,)).fetchone()
-
     if format == 1:
         """ Bot Human """
         text1 = conn.execute('SELECT * FROM botText WHERE id = ?',(promptIndex,)).fetchone()
         text2 = conn.execute('SELECT * FROM humanText WHERE id = ?',(promptIndex,)).fetchone()
-
     else:
         """ Human Bot """
         text1 = conn.execute('SELECT * FROM humanText WHERE id = ?',(promptIndex,)).fetchone()
         text2 = conn.execute('SELECT * FROM botText WHERE id = ?',(promptIndex,)).fetchone()
 
-    # Closes database
-    conn.close()
-
-    # TODO: Game Logic
+    """ Game Logic """
     if request.method == 'POST':
         response1 = request.form.get('response1')
         response2 = request.form.get('response2')
         numberCorrect = 0
-
         if format == 1:
             if response1 == "bot1" and response2 == "human2":
                 numberCorrect = 2
@@ -80,18 +80,39 @@ def game():
             else:
                 numberCorrect = 1
 
-        # TODO: Find a way to alter the ELO of prompts and texts
-        
+        # Obtains the new elo of the player and prompt, updates using SQL commands
+        new_player_elo = user['elo'] + change_elo(user['elo'], prompt['elo'], numberCorrect)
+        new_prompt_elo = prompt['elo'] - change_elo(user['elo'], prompt['elo'], numberCorrect)
+        conn.execute("UPDATE users SET elo = ? WHERE id = ?", (new_player_elo,user_id))
+        conn.execute("UPDATE prompts SET elo = ? WHERE id = ?", (new_prompt_elo,promptIndex))
 
-        # TODO: Find a way to alter the user ELO after a successful or unsuccessful guess
-
-
-        
+    # Commits changes to elo, closes database connection
+    conn.commit()
+    conn.close()
 
     # TODO: Later, try to generate some elo system for players and text blocks --> make some leaderboard
     return render_template('game.html',text1=text1, text2=text2, prompt=prompt,user=user)
 
-""" Login """
+""" Insert """
+@app.route('/insert', methods=["GET", "POST"])
+def insert():
+    # TODO: Using POST route to allow users to submit their own prompts, responses, based on elo --> request/test
+
+    if request.method == "POST":
+        # update sql table, check for injection, cleanse data
+
+        return render_template("insert.html")
+    else:
+        return render_template("insert.html")
+    
+""" Leaderboard """
+@app.route('/leaderboard', methods=["GET", "POST"])
+def leaderboard():
+    conn = get_db_connection()
+    rankedUsers = conn.execute("SELECT * FROM users ORDER BY elo DESC").fetchall()
+    return render_template("leaderboard.html", rankedUsers=rankedUsers)
+
+""" Login: Eric,Test  NicolasBourbaki,Test2 """
 @app.route('/login', methods=["GET", "POST"])
 def login():
     session.clear()
@@ -108,7 +129,7 @@ def login():
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
         flash('Successfully logged in!')
-        return redirect("/game")
+        return redirect("/landing")
     else:
         return render_template("login.html")
 
@@ -141,28 +162,6 @@ def register():
         return redirect("/")
     else:
         return render_template("register.html")
-
-""" Landing """
-@app.route("/landing", methods=["GET", "POST"])
-def landing():
-    """Sends logged-in user to landing dashboard"""
-
-    if "user_id" not in session:
-        return redirect("/login")
-
-    user_id = session["user_id"]
-
-    # Query database for the logged-in user's information
-    conn = sqlite3.connect("site.db")
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-    user = cursor.fetchone()
-    conn.close()
-
-    return render_template("landing.html", data=user)
-
-# TODO: Using POST route to allow users to submit their own prompts, responses, based on elo --> request/test
 
 """ Logout """
 @app.route("/logout")

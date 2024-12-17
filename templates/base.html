@@ -14,18 +14,25 @@
     <title> Bot or Not? | {% block title %}{% endblock %}</title>
 </head>
 
-<body class="fill container-fluid">
+
+<body class="container-fluid">
     <div class="container-fluid navigation-bar">
         {% if session["user_id"] %}
         <nav class="nav">
-            <a class="nav-link navigation-bar" href="/game">Bot Or Not?</a>
-            <a class="nav-link navigation-bar ml-auto mr-1" href="/logout">Log Out</a>
+            <a class="nav-link navigation-bar" href="/">Bot Or Not?</a>
+            <a class="nav-link navigation-bar" href="/landing">Landing</a>
+            <a class="nav-link navigation-bar" href="/game">Play Now!</a>
+            <a class="nav-link navigation-bar" href="/insert">Insert</a>
+            <a class="nav-link navigation-bar" href="/leaderboard">Leaderboard</a>
+            <a class="nav-link navigation-bar navbar-right" href="/logout">Log Out</a>
         </nav>
         {% else %}
         <nav class="nav">
             <a class="nav-link active navigation-bar" href="/">Bot Or Not?</a>
-            <a class="nav-link navigation-bar" href="/login">Login</a>
-            <a class="nav-link navigation-bar" href="/register">Register</a>
+            <div>
+                <a class="nav-link navigation-bar navbar-right" href="/login">Login</a>
+                <a class="nav-link navigation-bar navbar-right" href="/register">Register</a>   
+            </div>
         </nav>
         {% endif %}
     </div>

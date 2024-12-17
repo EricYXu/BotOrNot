@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}
+Leaderboard
+{% endblock %}
+
+{% block main %}
+
+<div class="container-fluid">
+    <div class="text-center row">
+        <h1 class="game-padding">Leaderboard</h1>
+    </div>
+    <table class="table table-striped">
+        <thead>
+          <tr>
+            <th scope="col game-text">Rank</th>
+            <th scope="col game-text">Username</th>
+            <th scope="col game-text">ELO</th>
+          </tr>
+        </thead>
+        <tbody>
+            {% for i in range(0,(rankedUsers)| length) %}
+            <tr>
+                <th scope="row">{{ i+1 }}</th>
+                <td>{{ rankedUsers[i]['username'] }}</td>
+                <td>{{ rankedUsers[i]['elo'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
