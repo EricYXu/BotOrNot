@@ -1,6 +1,5 @@
 import os
 from flask import Flask, request, redirect, render_template, session, flash
-import sqlite3
 from werkzeug.security import check_password_hash, generate_password_hash
 import random
 from helpers import get_db_connection, change_elo, get_bot_response
@@ -63,36 +62,35 @@ def game():
     """ Game Logic """
     if request.method == 'POST':
         response1 = request.form.get('response1')
-        response2 = request.form.get('response2')
+        print(response1)
         justification = request.form.get('justification')
 
-        if not response1 and not response2:
+        if not response1:
             flash('Enter a valid guess.')
-            return render_template("game.html")
+            return render_template("game.html",text1=text1, text2=text2, prompt=prompt,user=user)
         elif not justification:
             flash('Enter a valid justification.')
-            return render_template("game.html")
+            return render_template("game.html",text1=text1, text2=text2, prompt=prompt,user=user)
 
         numberCorrect = 0
         if format == 1:
-            if response1 == "bot1" and response2 == "human2":
-                numberCorrect = 2
-            elif response1 == "human1" and response2 == "bot2":
-                numberCorrect = 0
-            else:
+            if response1 == "bot-human":
                 numberCorrect = 1
+            else:
+                numberCorrect = 0
         else:
-            if response1 == "human1" and response2 == "bot2":
-                numberCorrect = 2
-            elif response1 == "bot1" and response2 == "human2":
-                numberCorrect = 0
-            else:
+            if response1 == "human-bot":
                 numberCorrect = 1
+            else:
+                numberCorrect = 0
+
+        new_score = numberCorrect + user['questionsCorrect']
 
         # Obtains the new elo of the player and prompt, updates using SQL commands
-        new_player_elo = user['elo'] + change_elo(user['elo'], prompt['elo'], numberCorrect) # TODO: Something wrong with changing player elo
+        new_player_elo = user['elo'] + change_elo(user['elo'], prompt['elo'], numberCorrect)
         new_prompt_elo = prompt['elo'] - change_elo(user['elo'], prompt['elo'], numberCorrect)
         conn.execute("UPDATE users SET elo = ? WHERE id = ?", (new_player_elo,user_id))
+        conn.execute("UPDATE users SET questionsCorrect = ? WHERE id = ?", (new_score,user_id))
         conn.execute("UPDATE prompts SET elo = ? WHERE id = ?", (new_prompt_elo,promptIndex))
         conn.execute("INSERT INTO justifications (username, promptID, justification) VALUES (?,?,?)",
                         (user['username'],promptIndex,justification))
@@ -127,6 +125,7 @@ def insert():
         conn.commit()
         conn.close()
 
+        flash('Successfully added prompt!')
         return render_template("insert.html")
     else:
         return render_template("insert.html")
@@ -137,7 +136,6 @@ def leaderboard():
     conn = get_db_connection()
     rankedUsers = conn.execute("SELECT * FROM users ORDER BY elo DESC").fetchall()
     rankedPrompts = conn.execute("SELECT * FROM prompts ORDER BY elo DESC").fetchall()
-    # TODO: ADD A PROMPT LEADERBOARD
     return render_template("leaderboard.html", rankedUsers=rankedUsers, rankedPrompts=rankedPrompts)
 
 """ Login: Eric,Test  NicolasBourbaki,Test2 """
@@ -179,29 +177,34 @@ def register():
         username = request.form.get("username")
         password = request.form.get("password")
         confirmation = request.form.get("confirmation")
-        # Checks validity of fields
+        
         if not username:
             flash('Enter a valid username.')
             return render_template("register.html")
         elif not password:
-            flash('Enter a valid password.')
+            flash('Enter a valid password and confirmation.')
+            return render_template("register.html")
+        elif not confirmation:
+            flash('Enter a valid password and confirmation.')
             return render_template("register.html")
         elif password != confirmation:
             flash('Ensure password and confirmation match.')
             return render_template("register.html")
-        try:
+        else:
             # TODO: REJECT DUPLICATE USERNAMES
-            conn = sqlite3.connect('site.db')
-            cur = conn.cursor()
-            cur.execute("INSERT INTO users (username, password) VALUES (?, ?)",
+            conn = get_db_connection()
+            rows = conn.execute("SELECT * FROM users WHERE username = ?", (request.form.get("username"),)).fetchall()
+        
+            if len(rows) != 1 or not check_password_hash(rows[0]["password"], request.form.get("password")):
+                flash('Username already taken.')
+                return render_template("register.html")
+
+            conn.execute("INSERT INTO users (username, password) VALUES (?, ?)",
                         (username, generate_password_hash(password)))
             conn.commit()
             conn.close()
-        except sqlite3.IntegrityError:
-            # Returns error if username is already taken
-            flash('Username already taken.')
-            return render_template("register.html")
 
+        flash('Account created successfully.')
         return redirect("/")
     else:
         return render_template("register.html")
