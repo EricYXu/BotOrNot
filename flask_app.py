@@ -191,11 +191,10 @@ def register():
             flash('Ensure password and confirmation match.')
             return render_template("register.html")
         else:
-            # TODO: REJECT DUPLICATE USERNAMES
             conn = get_db_connection()
             rows = conn.execute("SELECT * FROM users WHERE username = ?", (request.form.get("username"),)).fetchall()
         
-            if len(rows) != 1 or not check_password_hash(rows[0]["password"], request.form.get("password")):
+            if len(rows) == 1:
                 flash('Username already taken.')
                 return render_template("register.html")
 

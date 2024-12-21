@@ -1,7 +1,5 @@
 import math
 import sqlite3
-import torch
-import os
 from groq import Groq
 
 
