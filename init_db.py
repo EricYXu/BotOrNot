@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS users (
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     username TEXT NOT NULL,
     password TEXT NOT NULL,
-    elo INTEGER NOT NULL DEFAULT 1500
+    elo INTEGER NOT NULL DEFAULT 1500,
+    questionsCorrect INTEGER NOT NULL DEFAULT 0
 );
 """
 
@@ -20,46 +21,31 @@ CREATE TABLE IF NOT EXISTS prompts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     username TEXT NOT NULL,
-    text TEXT NOT NULL,
-    elo INTEGER NOT NULL DEFAULT 1500
+    promptText TEXT NOT NULL,
+    humanText TEXT NOT NULL,
+    botText TEXT NOT NULL,
+    elo INTEGER NOT NULL DEFAULT 1500,
+    votes INTEGER NOT NULL DEFAULT 0
 );
 """
 
-create_table_bot = """
-CREATE TABLE IF NOT EXISTS botText (
+create_table_justifications = """
+CREATE TABLE IF NOT EXISTS justifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     username TEXT NOT NULL,
-    text TEXT NOT NULL,
-    elo INTEGER NOT NULL DEFAULT 1500
-);
-"""
-
-create_table_human = """
-CREATE TABLE IF NOT EXISTS humanText (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    username TEXT NOT NULL,
-    text TEXT NOT NULL,
-    elo INTEGER NOT NULL DEFAULT 0
+    promptID INTEGER NOT NULL,
+    justification TEXT NOT NULL
 );
 """
 
 # Executes table creation
-cur.execute(create_table_bot)
-cur.execute(create_table_human)
-cur.execute(create_table_users)
-cur.execute(create_table_prompts)
+cur.execute(create_table_justifications)
+# cur.execute(create_table_prompts)
 
 # Inserts a few sample texts to get things started
-cur.execute("INSERT INTO users (username,password,elo) VALUES (?, ?,?)",
-            ('Eric','Test',0))
-cur.execute("INSERT INTO prompts (username,text,elo) VALUES (?, ?,?)",
-            ('Eric','What is a banana? (Limit response to 25 words)',0))
-cur.execute("INSERT INTO humanText (username,text,elo) VALUES (?, ?,?)",
-            ('Eric','A banana is an elongated, edible fruit produced by several kinds of large treelike herbaceous flowering plants in the genus Musa.',0))
-cur.execute("INSERT INTO botText (username,text,elo) VALUES (?, ?,?)",
-            ('Eric','A banana is a sweet, elongated fruit with a yellow peel, rich in potassium, commonly eaten raw or used in desserts and snacks.',0))
+# cur.execute("INSERT INTO prompts (username,promptText,humanText,botText) VALUES (?,?,?,?)",
+#             ('Eric','What is a banana?','A banana is an elongated, edible fruit produced by several kinds of large treelike herbaceous flowering plants in the genus Musa.','A banana is a sweet, elongated fruit with a yellow peel, rich in potassium, commonly eaten raw or used in desserts and snacks.'))
 
 connection.commit()
 connection.close()

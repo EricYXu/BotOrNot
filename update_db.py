@@ -7,7 +7,7 @@ connection = sqlite3.connect(db_name)
 cur = connection.cursor()
 
 # NOTE: SQL COMMANDS EXECUTED BELOW
-# cur.execute("UPDATE prompts SET elo = ? WHERE id = ?", (1400,2))
+cur.execute("DELETE FROM users WHERE id = 5")
 
 # # Inserting prompts
 # cur.execute("INSERT INTO prompts (username,text,elo) VALUES (?,?,?)",

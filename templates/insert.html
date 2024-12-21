@@ -11,17 +11,17 @@ Insert
         <h1 class="game-padding">Insert your own prompt and human response! ChatGPT will fill in the bot response.</h1>
     </div>
     <div class="row center">
-        <h3>You will gain upvotes based on how difficult/interesting your prompt is. You may only insert one question per day.</h3>
+        <h3>You will gain upvotes based on how thought-provoking your prompt is.</h3>
     </div>
     <form action="/insert" method="POST">
         <div class="col game-padding center">
             <div class="row form-group game-padding center">
                 <label for="formGroupExampleInput" class="game-text large-tight">Your Prompt</label>
-                <input type="text" class="form-control large-tight" id="justification" placeholder="Prompt">
+                <input type="text" class="form-control large-tight" name="prompt" placeholder="Prompt">
             </div>
             <div class="row form-group game-padding center">
-                <label for="formGroupExampleInput" class="game-text large-tight">Human Response</label>
-                <input type="text" class="form-control large-tight" id="human" placeholder="Human Text">
+                <label for="formGroupExampleInput" class="game-text large-tight">Your Human Response</label>
+                <input type="text" class="form-control large-tight" name="human" placeholder="Human Text">
             </div>
             <div class="row game-padding center">
                 <button class="btn btn-primary btn-lg large-tight" type="submit">Submit</button>

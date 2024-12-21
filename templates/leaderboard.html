@@ -8,7 +8,7 @@ Leaderboard
 
 <div class="container-fluid">
     <div class="text-center row">
-        <h1 class="game-padding">Leaderboard</h1>
+        <h1 class="game-padding">Player Leaderboard</h1>
     </div>
     <table class="table table-striped">
         <thead>
@@ -24,6 +24,29 @@ Leaderboard
                 <th scope="row">{{ i+1 }}</th>
                 <td>{{ rankedUsers[i]['username'] }}</td>
                 <td>{{ rankedUsers[i]['elo'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="text-center row">
+        <h1 class="game-padding">Prompt Leaderboard</h1>
+    </div>
+    <table class="table table-striped">
+        <thead>
+          <tr>
+            <th scope="col game-text">Rank</th>
+            <th scope="col game-text">Text</th>
+            <th scope="col game-text">Username</th>
+            <th scope="col game-text">ELO</th>
+          </tr>
+        </thead>
+        <tbody>
+            {% for i in range(0,(rankedPrompts)| length) %}
+            <tr>
+                <th scope="row">{{ i+1 }}</th>
+                <td>{{ rankedPrompts[i]['promptText'] }}</td>
+                <td>{{ rankedPrompts[i]['username'] }}</td>
+                <td>{{ rankedPrompts[i]['elo'] }}</td>
             </tr>
             {% endfor %}
         </tbody>

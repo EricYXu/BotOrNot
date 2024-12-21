@@ -3,7 +3,7 @@ from flask import Flask, request, redirect, render_template, session, flash
 import sqlite3
 from werkzeug.security import check_password_hash, generate_password_hash
 import random
-from helpers import get_db_connection, change_elo
+from helpers import get_db_connection, change_elo, get_bot_response
 
 # Configuring Flask
 app = Flask(__name__)
@@ -50,19 +50,29 @@ def game():
     promptIndices = conn.execute('SELECT COUNT(*) AS prompt_count FROM prompts').fetchone()['prompt_count']
     promptIndex = random.randint(1,promptIndices)
     prompt = conn.execute('SELECT * FROM prompts WHERE id = ?',(promptIndex,)).fetchone()
+
     if format == 1:
         """ Bot Human """
-        text1 = conn.execute('SELECT * FROM botText WHERE id = ?',(promptIndex,)).fetchone()
-        text2 = conn.execute('SELECT * FROM humanText WHERE id = ?',(promptIndex,)).fetchone()
+        text1 = prompt['botText']
+        text2 = prompt['humanText']
     else:
         """ Human Bot """
-        text1 = conn.execute('SELECT * FROM humanText WHERE id = ?',(promptIndex,)).fetchone()
-        text2 = conn.execute('SELECT * FROM botText WHERE id = ?',(promptIndex,)).fetchone()
+        text1 = prompt['humanText']
+        text2 = prompt['botText']
 
     """ Game Logic """
     if request.method == 'POST':
         response1 = request.form.get('response1')
         response2 = request.form.get('response2')
+        justification = request.form.get('justification')
+
+        if not response1 and not response2:
+            flash('Enter a valid guess.')
+            return render_template("game.html")
+        elif not justification:
+            flash('Enter a valid justification.')
+            return render_template("game.html")
+
         numberCorrect = 0
         if format == 1:
             if response1 == "bot1" and response2 == "human2":
@@ -80,25 +90,42 @@ def game():
                 numberCorrect = 1
 
         # Obtains the new elo of the player and prompt, updates using SQL commands
-        new_player_elo = user['elo'] + change_elo(user['elo'], prompt['elo'], numberCorrect)
+        new_player_elo = user['elo'] + change_elo(user['elo'], prompt['elo'], numberCorrect) # TODO: Something wrong with changing player elo
         new_prompt_elo = prompt['elo'] - change_elo(user['elo'], prompt['elo'], numberCorrect)
         conn.execute("UPDATE users SET elo = ? WHERE id = ?", (new_player_elo,user_id))
         conn.execute("UPDATE prompts SET elo = ? WHERE id = ?", (new_prompt_elo,promptIndex))
+        conn.execute("INSERT INTO justifications (username, promptID, justification) VALUES (?,?,?)",
+                        (user['username'],promptIndex,justification))
 
-    # Commits changes to elo, closes database connection
+    # Commits changes, closes database connection
     conn.commit()
     conn.close()
 
-    # TODO: Later, try to generate some elo system for players and text blocks --> make some leaderboard
     return render_template('game.html',text1=text1, text2=text2, prompt=prompt,user=user)
 
 """ Insert """
 @app.route('/insert', methods=["GET", "POST"])
 def insert():
-    # TODO: Using POST route to allow users to submit their own prompts, responses, based on elo --> request/test
+    if "user_id" not in session:
+        flash('Please create an account first.')
+        return redirect("/")
+
+    # Gets user information
+    user_id = session["user_id"]
+    conn = get_db_connection()
+    user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
 
     if request.method == "POST":
         # update sql table, check for injection, cleanse data
+        prompt = request.form.get('prompt')
+        human_response = request.form.get('human')
+        bot_response = get_bot_response(prompt)
+
+        # SQL command to insert into the database
+        conn = get_db_connection()
+        conn.execute("INSERT INTO prompts (username, promptText, humanText, botText) VALUES (?,?,?,?)",(user['username'], prompt, human_response, bot_response))
+        conn.commit()
+        conn.close()
 
         return render_template("insert.html")
     else:
@@ -109,21 +136,34 @@ def insert():
 def leaderboard():
     conn = get_db_connection()
     rankedUsers = conn.execute("SELECT * FROM users ORDER BY elo DESC").fetchall()
-    return render_template("leaderboard.html", rankedUsers=rankedUsers)
+    rankedPrompts = conn.execute("SELECT * FROM prompts ORDER BY elo DESC").fetchall()
+    # TODO: ADD A PROMPT LEADERBOARD
+    return render_template("leaderboard.html", rankedUsers=rankedUsers, rankedPrompts=rankedPrompts)
 
 """ Login: Eric,Test  NicolasBourbaki,Test2 """
 @app.route('/login', methods=["GET", "POST"])
 def login():
     session.clear()
+    username = request.form.get("username")
+    password = request.form.get("password")
 
     if request.method == "POST":
+        # Check validity of fields
+        if not username:
+            flash('Enter a valid username.')
+            return render_template("login.html")
+        elif not password:
+            flash('Enter a valid password.')
+            return render_template("login.html")
+
         # Query database for username
         conn = get_db_connection()
         rows = conn.execute("SELECT * FROM users WHERE username = ?", (request.form.get("username"),)).fetchall()
         conn.close()
-
+        
         if len(rows) != 1 or not check_password_hash(rows[0]["password"], request.form.get("password")):
-            print("Yay!")
+            flash('Invalid username or password.')
+            return render_template("login.html")
 
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
@@ -141,13 +181,16 @@ def register():
         confirmation = request.form.get("confirmation")
         # Checks validity of fields
         if not username:
-            return apology("must provide username", 400)
+            flash('Enter a valid username.')
+            return render_template("register.html")
         elif not password:
-            return apology("must provide password", 400)
+            flash('Enter a valid password.')
+            return render_template("register.html")
         elif password != confirmation:
-            return apology("Password and confirmation must match", 400)
+            flash('Ensure password and confirmation match.')
+            return render_template("register.html")
         try:
-            # Adds new user to the same database used for login
+            # TODO: REJECT DUPLICATE USERNAMES
             conn = sqlite3.connect('site.db')
             cur = conn.cursor()
             cur.execute("INSERT INTO users (username, password) VALUES (?, ?)",
@@ -156,7 +199,8 @@ def register():
             conn.close()
         except sqlite3.IntegrityError:
             # Returns error if username is already taken
-            return apology("Username already taken", 400)
+            flash('Username already taken.')
+            return render_template("register.html")
 
         return redirect("/")
     else:
