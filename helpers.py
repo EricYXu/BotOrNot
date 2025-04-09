@@ -4,7 +4,7 @@ from groq import Groq
 
 
 """ GROQ API KEY"""
-client = Groq(api_key="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",)
+client = Groq(api_key=groq_key,)
 
 # from flask import redirect, render_template, session
 # from functools import wraps
